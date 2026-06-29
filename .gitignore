@@ -1,5 +1,5 @@
 .agent/
-*/.DS_Store
+.DS_Store
 */venv/*
 */__pycache__/*
 AGENTS.md
