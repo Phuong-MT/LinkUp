@@ -1,0 +1,7 @@
+.agent/
+*/.DS_Store
+*/venv/*
+*/__pycache__/*
+AGENTS.md
+.vercel
+.env*
