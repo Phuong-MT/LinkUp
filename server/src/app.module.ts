@@ -5,6 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ConnectDBModule } from './utils/connectDB';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -18,7 +20,9 @@ import { AppService } from './app.service';
                 limit: 100,
             },
         ]),
-        ConnectDBModule,  
+        ConnectDBModule,
+        AuthModule,
+        UserModule,  
   ],
   controllers: [AppController],
   providers: [
