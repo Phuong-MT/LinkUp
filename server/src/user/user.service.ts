@@ -14,4 +14,33 @@ export class UserService {
   async findByUsername(username: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ username }).exec();
   }
+
+  async findByEmail(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email }).exec();
+  }
+
+  async saveVerificationCode(userId: string, code: string, expiresAt: Date): Promise<void> {
+    await this.userModel
+      .findByIdAndUpdate(userId, {
+        verificationCode: code,
+        verificationCodeExpiresAt: expiresAt,
+      })
+      .exec();
+  }
+
+  async clearVerificationCode(userId: string): Promise<void> {
+    await this.userModel
+      .findByIdAndUpdate(userId, {
+        $unset: { verificationCode: 1, verificationCodeExpiresAt: 1 },
+      })
+      .exec();
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await this.userModel
+      .findByIdAndUpdate(userId, {
+        passwordHash,
+      })
+      .exec();
+  }
 }

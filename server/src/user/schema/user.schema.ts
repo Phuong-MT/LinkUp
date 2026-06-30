@@ -56,6 +56,11 @@ export class User {
     avatar?: string;
   };
 
+  @Prop()
+  verificationCode?: string;
+
+  @Prop()
+  verificationCodeExpiresAt?: Date;
   // soft delete
   @Prop({ default: false })
   isDeleted: boolean;
