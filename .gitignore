@@ -5,3 +5,5 @@
 AGENTS.md
 .vercel
 .env*
+node_modules/*
+package-lock.json

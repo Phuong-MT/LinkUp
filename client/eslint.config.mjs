@@ -1,12 +1,19 @@
+import path from "node:path";
+
+import { includeIgnoreFile } from "@eslint/compat";
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 
+const gitignorePath = path.resolve(import.meta.dirname, ".gitignore");
 const isProd = process.env.NODE_ENV === "production";
 
 const eslintConfig = defineConfig([
+  includeIgnoreFile(gitignorePath),
   ...nextVitals,
   ...nextTs,
+  eslintPluginPrettierRecommended,
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

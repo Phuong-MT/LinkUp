@@ -1,0 +1,20 @@
+{
+  "name": "linkup-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "client/**/*.{js,jsx,ts,tsx}": [
+      "npm run lint:fix --prefix client"
+    ],
+    "server/**/*.{js,ts}": [
+      "npm run lint --fix --prefix server"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
+  }
+}

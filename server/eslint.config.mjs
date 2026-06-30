@@ -3,10 +3,14 @@ import eslint from '@eslint/js';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import { includeIgnoreFile } from '@eslint/compat';
+import path from 'node:path';
 
+const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 const isProd = process.env.NODE_ENV === 'production';
 
 export default tseslint.config(
+  includeIgnoreFile(gitignorePath),
   {
     ignores: ['eslint.config.mjs'],
   },
