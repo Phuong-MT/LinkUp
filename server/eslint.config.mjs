@@ -4,6 +4,8 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+const isProd = process.env.NODE_ENV === 'production';
+
 export default tseslint.config(
   {
     ignores: ['eslint.config.mjs'],
@@ -26,10 +28,29 @@ export default tseslint.config(
   },
   {
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      "prettier/prettier": ["error", { endOfLine: "auto" }],
+      '@typescript-eslint/no-explicit-any': isProd ? 'error' : 'off',
+      '@typescript-eslint/no-floating-promises': isProd ? 'error' : 'warn',
+      '@typescript-eslint/no-unsafe-argument': isProd ? 'error' : 'warn',
+      'no-console': isProd ? 'error' : 'warn',
+      'no-debugger': isProd ? 'error' : 'warn',
+      'prettier/prettier': ['error', { endOfLine: 'auto' }],
+      '@typescript-eslint/consistent-type-imports': [
+        isProd ? 'error' : 'warn',
+        {
+          prefer: 'type-imports',
+          fixStyle: 'inline-type-imports',
+        },
+      ],
+      'sort-imports': [
+        isProd ? 'error' : 'warn',
+        {
+          ignoreCase: false,
+          ignoreDeclarationSort: true,
+          ignoreMemberSort: false,
+          memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+          allowSeparatedGroups: true,
+        },
+      ],
     },
   },
 );
