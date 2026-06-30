@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 
+import { CodeLoginForm } from './code-login-form';
+import { ForgotPasswordForm } from './forgot-password-form';
 import { PasswordLoginForm } from './password-login-form';
-// import { CodeLoginForm } from "./code-login-form";
-// import { ForgotPasswordForm } from "./forgot-password-form";
 
 export function LoginForm() {
   const [loginMethod, setLoginMethod] = useState<'password' | 'code' | 'forgot_password'>(
@@ -57,15 +57,15 @@ export function LoginForm() {
       )}
 
       {loginMethod === 'password' && <PasswordLoginForm />}
-      {/* {loginMethod === "code" && <CodeLoginForm />} */}
-      {/* {loginMethod === "forgot_password" && (
-				<ForgotPasswordForm
-					onBackToLogin={(msg) => {
-						setLoginMethod("password");
-						if (msg) setSuccessMessage(msg);
-					}}
-				/>
-			)} */}
+      {loginMethod === 'code' && <CodeLoginForm />}
+      {loginMethod === 'forgot_password' && (
+        <ForgotPasswordForm
+          onBackToLogin={(msg) => {
+            setLoginMethod('password');
+            if (msg) setSuccessMessage(msg);
+          }}
+        />
+      )}
 
       {loginMethod !== 'forgot_password' && (
         <div className="mt-4 text-center">
