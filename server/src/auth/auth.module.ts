@@ -8,9 +8,16 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { forwardRef } from '@nestjs/common';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
-  imports: [forwardRef(() => UserModule), PassportModule, ConfigModule, JwtModule.register({})],
+  imports: [
+    forwardRef(() => UserModule),
+    forwardRef(() => MailModule),
+    PassportModule,
+    ConfigModule,
+    JwtModule.register({}),
+  ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtRefreshStrategy],
   exports: [AuthService],
