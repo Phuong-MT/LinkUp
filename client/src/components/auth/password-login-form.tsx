@@ -32,7 +32,7 @@ export function PasswordLoginForm() {
     }
     const resultAction = await dispatch(loginAsync({ username, password }));
     if (loginAsync.fulfilled.match(resultAction)) {
-      router.push('/dashboard');
+      router.push('/');
     }
   };
 

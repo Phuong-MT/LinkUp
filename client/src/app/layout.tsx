@@ -11,17 +11,21 @@ export const metadata: Metadata = {
   description: 'Social Network for Professionals',
 };
 
+import { ThemeProvider } from '@/components/theme-provider';
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.className} min-h-screen bg-zinc-50 dark:bg-zinc-900 text-zinc-950 dark:text-zinc-50`}
       >
-        <ReduxProvider>{children}</ReduxProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ReduxProvider>{children}</ReduxProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

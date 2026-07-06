@@ -41,7 +41,7 @@ export function CodeLoginForm() {
     }
     const resultAction = await dispatch(loginWithCodeAsync({ email, code }));
     if (loginWithCodeAsync.fulfilled.match(resultAction)) {
-      router.push('/dashboard');
+      router.push('/');
     }
   };
 

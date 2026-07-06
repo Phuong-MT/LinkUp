@@ -71,7 +71,7 @@ export function RegisterForm() {
 
     const resultAction = await dispatch(registerConfirmAsync({ email, code }));
     if (registerConfirmAsync.fulfilled.match(resultAction)) {
-      router.push('/dashboard');
+      router.push('/');
     }
   };
 

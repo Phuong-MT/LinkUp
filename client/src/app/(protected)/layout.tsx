@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 
+import LayoutShell from '@/components/layout/layout-shell';
 import { ReduxHydrator } from '@/redux/provider';
 import { type RootState } from '@/redux/store';
 import { type User, type Role } from '@/types/user.types';
@@ -30,9 +31,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     redirect('/login');
   }
   return (
-    <div>
+    <div className="h-screen overflow-hidden flex flex-col">
       <ReduxHydrator initialState={initialState} />
-      {children}
+      <LayoutShell>{children}</LayoutShell>
     </div>
   );
 }

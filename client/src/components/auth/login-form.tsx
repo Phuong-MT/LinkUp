@@ -83,7 +83,7 @@ export function LoginForm() {
           </div>
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Don&rsquo;t have an account?
+              Don&rsquo;t have an account?{' '}
               <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
                 Sign up
               </Link>
