@@ -88,3 +88,54 @@ export const resetPasswordAsync = createAsyncThunk(
     }
   },
 );
+
+export const sendRegisterCodeAsync = createAsyncThunk(
+  'auth/sendRegisterCodeAsync',
+  async ({ username, email, password }: Record<string, string>, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post<{ message: string }>('/auth/register/send-code', {
+        username,
+        email,
+        password,
+      });
+      return response.data;
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = e.response?.data?.message ?? e.message ?? 'Failed to send code';
+      return rejectWithValue(errorMessage);
+    }
+  },
+);
+
+export const registerConfirmAsync = createAsyncThunk(
+  'auth/registerConfirmAsync',
+  async ({ email, code }: Record<string, string>, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post<{ message: string }>('/auth/register/confirm', {
+        email,
+        code,
+      });
+      return response.data;
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = e.response?.data?.message ?? e.message ?? 'Registration failed';
+      return rejectWithValue(errorMessage);
+    }
+  },
+);
+
+export const resendRegisterCodeAsync = createAsyncThunk(
+  'auth/resendRegisterCodeAsync',
+  async ({ email }: Record<string, string>, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post<{ message: string }>('/auth/register/resend-code', {
+        email,
+      });
+      return response.data;
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = e.response?.data?.message ?? e.message ?? 'Failed to resend code';
+      return rejectWithValue(errorMessage);
+    }
+  },
+);

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DBName } from 'src/utils/connectDB';
-import { User, type UserDocument } from './schema/user.schema';
+import { User, type UserDocument, UserStatus } from './schema/user.schema';
 
 @Injectable()
 export class UserService {
@@ -45,6 +45,45 @@ export class UserService {
       .findByIdAndUpdate(userId, {
         passwordHash,
       })
+      .exec();
+  }
+
+  async createPendingUser(
+    username: string,
+    email: string,
+    passwordHash: string,
+    code: string,
+    expiresAt: Date,
+  ): Promise<UserDocument> {
+    // Delete any existing pending user with the same username or email to avoid conflicts
+    await this.userModel
+      .deleteMany({
+        status: UserStatus.PENDING,
+        $or: [{ username }, { email }],
+      })
+      .exec();
+
+    const newUser = new this.userModel({
+      username,
+      email,
+      passwordHash,
+      status: UserStatus.PENDING,
+      verificationCode: code,
+      verificationCodeExpiresAt: expiresAt,
+    });
+    return newUser.save();
+  }
+
+  async activateUser(userId: string): Promise<UserDocument | null> {
+    return this.userModel
+      .findByIdAndUpdate(
+        userId,
+        {
+          status: UserStatus.ACTIVE,
+          $unset: { verificationCode: 1, verificationCodeExpiresAt: 1 },
+        },
+        { returnDocument: 'after' },
+      )
       .exec();
   }
 }

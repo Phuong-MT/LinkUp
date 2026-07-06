@@ -1,6 +1,13 @@
 import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
-import { LoginDto, LoginWithCodeDto, ResetPasswordDto, SendCodeDto } from './dto/login.dto';
+import {
+  LoginDto,
+  LoginWithCodeDto,
+  RegisterConfirmDto,
+  RegisterSendCodeDto,
+  ResetPasswordDto,
+  SendCodeDto,
+} from './dto/login.dto';
 import { AuthService } from './auth.service';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { UserRole } from 'src/user/schema/user.schema';
@@ -39,6 +46,47 @@ export class AuthController {
 
     return { message: 'Login successful' };
   }
+
+  @Post('register/send-code')
+  async registerSendCode(@Body() registerSendCodeDto: RegisterSendCodeDto) {
+    await this.authService.registerSendCode(registerSendCodeDto);
+    return { message: 'Verification code sent successfully' };
+  }
+
+  @Post('register/resend-code')
+  async registerResendCode(@Body() sendCodeDto: SendCodeDto) {
+    await this.authService.registerResendCode(sendCodeDto);
+    return { message: 'Verification code resent successfully' };
+  }
+
+  @Post('register/confirm')
+  async registerConfirm(
+    @Body() registerConfirmDto: RegisterConfirmDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const user = await this.authService.registerConfirm(registerConfirmDto);
+    const tokens = this.authService.login(user);
+    const isProd = process.env.NODE_ENV === 'production';
+
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      domain: isProd ? '.phuong-mt.id.vn' : undefined,
+      path: '/',
+    });
+
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      domain: isProd ? '.phuong-mt.id.vn' : undefined,
+      path: '/',
+    });
+
+    return { message: 'Registration successful' };
+  }
+
   @Post('send-code')
   async sendVerificationCode(@Body() sendCodeDto: SendCodeDto) {
     await this.authService.generateAndSendVerificationCode(sendCodeDto.email);

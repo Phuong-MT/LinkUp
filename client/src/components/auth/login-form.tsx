@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { CodeLoginForm } from './code-login-form';
@@ -68,16 +69,26 @@ export function LoginForm() {
       )}
 
       {loginMethod !== 'forgot_password' && (
-        <div className="mt-4 text-center">
-          <button
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-            onClick={() => {
-              setLoginMethod('forgot_password');
-              setSuccessMessage('');
-            }}
-          >
-            Forgot your password?
-          </button>
+        <div className="mt-4 text-center space-y-2">
+          <div>
+            <button
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              onClick={() => {
+                setLoginMethod('forgot_password');
+                setSuccessMessage('');
+              }}
+            >
+              Forgot your password?
+            </button>
+          </div>
+          <div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Don&rsquo;t have an account?
+              <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
+                Sign up
+              </Link>
+            </span>
+          </div>
         </div>
       )}
     </div>
