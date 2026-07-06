@@ -1,7 +1,49 @@
-import { Controller } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Inject,
+  Logger,
+  NotFoundException,
+  Req,
+  UseGuards,
+  forwardRef,
+} from '@nestjs/common';
 import { UserService } from './user.service';
+import { AuthService } from '../auth/auth.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { type UserDocument, UserRole } from './schema/user.schema';
+import { type Request } from 'express';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  private logger = new Logger(UserController.name);
+  constructor(
+    private readonly userService: UserService,
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService,
+  ) {}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('me')
+  async getProfile(@Req() req: Partial<Request & { user?: { userId: string; role: UserRole } }>) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new NotFoundException('User not found in token');
+    }
+    const user = await this.userService.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const userObj = (user.toObject ? user.toObject() : user) as UserDocument;
+    return {
+      user: {
+        id: userObj._id,
+        email: userObj.email,
+        name: userObj.username,
+      },
+      role: req.user?.role,
+    };
+  }
 }

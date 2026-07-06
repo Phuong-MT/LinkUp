@@ -4,6 +4,7 @@ import { Document } from 'mongoose';
 export enum UserRole {
   SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER',
   USER = 'USER',
 }
 
@@ -14,13 +15,14 @@ export enum UserStatus {
 }
 
 export type UserDocument = User & Document;
+export type UserDocumentExtended = Partial<UserDocument>;
 
 @Schema({
   timestamps: true,
 })
 export class User {
   @Prop({ required: true })
-  username: string;
+  username!: string;
 
   @Prop()
   email?: string;
@@ -29,21 +31,21 @@ export class User {
   phone?: string;
 
   @Prop({ required: true })
-  passwordHash: string;
+  passwordHash!: string;
 
   @Prop({
     type: String,
     enum: UserRole,
     default: UserRole.USER,
   })
-  role: UserRole;
+  role!: UserRole;
 
   @Prop({
     type: String,
     enum: UserStatus,
     default: UserStatus.ACTIVE,
   })
-  status: UserStatus;
+  status!: UserStatus;
 
   @Prop({
     type: {
@@ -63,7 +65,7 @@ export class User {
   verificationCodeExpiresAt?: Date;
   // soft delete
   @Prop({ default: false })
-  isDeleted: boolean;
+  isDeleted!: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

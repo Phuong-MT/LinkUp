@@ -19,6 +19,10 @@ export class UserService {
     return this.userModel.findOne({ email }).exec();
   }
 
+  async findById(userId: string): Promise<UserDocument | null> {
+    return this.userModel.findById(userId).exec();
+  }
+
   async saveVerificationCode(userId: string, code: string, expiresAt: Date): Promise<void> {
     await this.userModel
       .findByIdAndUpdate(userId, {

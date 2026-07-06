@@ -3,6 +3,7 @@ import { combineReducers } from '@reduxjs/toolkit';
 import { type UnknownAction } from '@reduxjs/toolkit';
 
 import authReducer from './features/authSlice';
+import userReducer from './features/userSlice';
 
 function isHydrateAction(action: UnknownAction): action is UnknownAction & {
   type: 'HYDRATE';
@@ -13,6 +14,7 @@ function isHydrateAction(action: UnknownAction): action is UnknownAction & {
 
 const combinedReducer = combineReducers({
   auth: authReducer,
+  user: userReducer,
 });
 
 export const rootReducer = (state: RootState | undefined, action: UnknownAction): RootState => {
@@ -23,14 +25,20 @@ export const rootReducer = (state: RootState | undefined, action: UnknownAction)
     const currentState = state || combinedReducer(undefined, { type: '@@INIT' });
     const nextState = { ...currentState };
 
+    const mergeStateSlice = <K extends keyof RootState>(
+      slice: K,
+      partial: Partial<RootState[K]>,
+    ) => {
+      nextState[slice] = {
+        ...(currentState[slice] as Record<string, unknown>),
+        ...partial,
+      } as RootState[K];
+    };
+
     Object.keys(payload).forEach((key) => {
       const k = key as keyof RootState;
       if (payload[k]) {
-        // Combine existing slice state with the new hydrated state for this slice
-        nextState[k] = {
-          ...currentState[k],
-          ...(payload[k] as RootState[typeof k]),
-        };
+        mergeStateSlice(k, payload[k] as Partial<RootState[typeof k]>);
       }
     });
 
