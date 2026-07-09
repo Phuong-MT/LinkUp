@@ -21,6 +21,7 @@ export abstract class CloudService {
       folder?: string;
       resourceType?: 'image' | 'video' | 'raw' | 'auto';
       transformation?: unknown;
+      eager?: unknown;
     },
   ): Promise<UploadResult>;
 

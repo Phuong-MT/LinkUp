@@ -116,5 +116,3 @@ PostSchema.index({ status: 1, visibility: 1, publishedAt: -1 });
 PostSchema.index({ authorId: 1, publishedAt: -1 });
 // 3. Tìm kiếm bài viết theo Hashtag nhanh chóng
 PostSchema.index({ tags: 1, status: 1 });
-// 4. Tìm kiếm bài đăng thông qua Slug (khi người dùng click vào link bài viết cụ thể)
-PostSchema.index({ slug: 1 });

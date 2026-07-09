@@ -71,12 +71,14 @@ export class CloudinaryService extends CloudService {
       folder?: string;
       resourceType?: 'image' | 'video' | 'raw' | 'auto';
       transformation?: unknown;
+      eager?: unknown;
     },
   ): Promise<UploadResult> {
     const uploadOptions: UploadApiOptions = {
       folder: options?.folder || 'linkup',
       resource_type: options?.resourceType || 'auto',
       transformation: options?.transformation as UploadApiOptions['transformation'],
+      eager: options?.eager as UploadApiOptions['eager'],
     };
     return this._uploadStream(file, uploadOptions);
   }
