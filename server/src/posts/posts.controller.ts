@@ -15,6 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { PostsService } from './posts.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Post as PostSchema } from './schema/post.schema';
+import { UserRole } from '../user/schema/user.schema';
 
 @Controller('posts')
 export class PostsController {
@@ -24,6 +25,7 @@ export class PostsController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadMedia(
+    @Req() req: Partial<Request> & { user?: { userId: string; role: UserRole } },
     @UploadedFile() file: { buffer: Buffer; originalname: string; mimetype: string; size: number },
   ) {
     if (!file) {
@@ -35,12 +37,12 @@ export class PostsController {
 
     let resourceType: 'image' | 'video';
     if (mimetype.startsWith('image/')) {
-      if (size > 5 * 1024 * 1024) {
+      if (size > 20 * 1024 * 1024) {
         throw new BadRequestException('Image file size exceeds the 5MB limit');
       }
       resourceType = 'image';
     } else if (mimetype.startsWith('video/')) {
-      if (size > 20 * 1024 * 1024) {
+      if (size > 100 * 1024 * 1024) {
         throw new BadRequestException('Video file size exceeds the 20MB limit');
       }
       resourceType = 'video';
@@ -50,7 +52,9 @@ export class PostsController {
       );
     }
 
-    return this.postsService.uploadMedia(file, resourceType);
+    return this.postsService.uploadMedia(file, resourceType, {
+      folder: req.user?.userId || 'default',
+    });
   }
 
   @UseGuards(JwtAuthGuard)

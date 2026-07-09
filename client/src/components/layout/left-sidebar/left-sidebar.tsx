@@ -59,8 +59,8 @@ export default function LeftSidebar({ showLeftSidebar, onClose }: LeftSidebarPro
 
       <aside
         className={`
-          fixed bottom-0 top-14 left-0 z-35 w-64 border-r border-zinc-200/80 bg-white p-3 shadow-lg transition-transform duration-300 ease-in-out md:sticky md:top-0 md:z-0 md:bg-transparent md:border-0 md:shadow-none h-full shrink-0
-          ${showLeftSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          fixed bottom-0 top-14 left-0 z-35 w-full border-r border-zinc-200/80 bg-white p-3 shadow-lg transition-transform duration-300 ease-in-out md:sticky md:top-0 md:z-0 md:bg-transparent md:border-0 md:shadow-none h-full shrink-0
+          ${showLeftSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} max-w-[360px]
         `}
       >
         <div className="flex flex-col gap-1.5 h-full overflow-y-auto no-scrollbar pr-1">

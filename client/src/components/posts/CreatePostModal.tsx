@@ -3,7 +3,7 @@ import { X, Globe, ImageIcon, Video, Smile, Loader2 } from 'lucide-react';
 import React from 'react';
 
 import { MediaGrid } from '@/components/posts/MediaGrid';
-import { useCreatePost } from '@/hooks/useCreatePost';
+import { useCreatePost } from '@/hooks/post/useCreatePost';
 
 interface CreatePostModalProps {
   user: {

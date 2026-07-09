@@ -38,14 +38,20 @@ export class PostsService {
     private readonly cloudService: CloudService,
   ) {}
 
-  async uploadMedia(file: UploadFile, resourceType: 'image' | 'video') {
+  async uploadMedia(
+    file: UploadFile,
+    resourceType: 'image' | 'video',
+    arg?: {
+      folder?: string;
+    },
+  ) {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
-
+    const extendFoler = arg?.folder || '';
     try {
       const result = await this.cloudService.uploadFile(file, {
-        folder: 'posts',
+        folder: extendFoler + '/' + 'posts',
         resourceType,
         eager: [{ fetch_format: 'auto', quality: 'auto' }],
       });

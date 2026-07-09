@@ -70,7 +70,7 @@ export const useCreatePost = ({
       }
 
       // 5MB limit for images, 20MB for videos
-      const limit = isImage ? 5 * 1024 * 1024 : 20 * 1024 * 1024;
+      const limit = isImage ? 20 * 1024 * 1024 : 100 * 1024 * 1024;
       const fileId = Math.random().toString(36).substring(2, 9);
 
       const newUploadingFile: UploadingFile = {
