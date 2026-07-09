@@ -1,19 +1,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema, Types } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type PostCommentDocument = PostComment & Document;
+export const MAX_COMMENT_PER_BUCKET = 100;
 
 @Schema({ _id: false })
 export class Reply {
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     required: true,
     default: () => new Types.ObjectId(),
   })
-  replyId!: MongooseSchema.Types.ObjectId;
+  replyId!: Types.ObjectId;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-  authorId!: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  authorId!: Types.ObjectId;
 
   @Prop({ required: true })
   content!: string;
@@ -21,11 +22,11 @@ export class Reply {
   @Prop({ type: String, default: null })
   media?: string;
 
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }], default: [] })
-  mentions!: MongooseSchema.Types.ObjectId[]; // Tag trong reply
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  mentions!: Types.ObjectId[]; // Tag trong reply
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', default: null })
-  replyToUserId?: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null })
+  replyToUserId?: Types.ObjectId;
 
   @Prop({ type: Number, default: 0 })
   likeCount!: number;
@@ -39,14 +40,14 @@ export const ReplySchema = SchemaFactory.createForClass(Reply);
 @Schema({ _id: false })
 export class CommentItem {
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     required: true,
     default: () => new Types.ObjectId(),
   })
-  commentId!: MongooseSchema.Types.ObjectId;
+  commentId!: Types.ObjectId;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-  authorId!: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  authorId!: Types.ObjectId;
 
   @Prop({ required: true })
   content!: string;
@@ -54,8 +55,8 @@ export class CommentItem {
   @Prop({ type: String, default: null })
   media?: string;
 
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }], default: [] })
-  mentions!: MongooseSchema.Types.ObjectId[]; // Tag trong comment cấp 1
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  mentions!: Types.ObjectId[]; // Tag trong comment cấp 1
 
   @Prop({ type: Number, default: 0 })
   likeCount!: number;
@@ -84,8 +85,8 @@ export const CommentItemSchema = SchemaFactory.createForClass(CommentItem);
   timestamps: true, // Theo dõi thời gian tạo và cập nhật của cả bucket
 })
 export class PostComment {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Post', required: true })
-  postId!: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Post', required: true })
+  postId!: Types.ObjectId;
 
   // Số thứ tự của bucket (0, 1, 2...). Bucket lớn nhất chứa các comment mới nhất.
   @Prop({ type: Number, required: true, default: 0 })

@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Query,
   Req,
@@ -71,5 +72,28 @@ export class PostsController {
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const skipNum = skip ? parseInt(skip, 10) : 0;
     return this.postsService.findAll(limitNum, skipNum);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/comments')
+  async addComment(
+    @Req() req: { user?: { userId?: string } },
+    @Param('id') postId: string,
+    @Body('content') content: string,
+  ) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new BadRequestException('User ID not found in token');
+    }
+    if (!content || !content.trim()) {
+      throw new BadRequestException('Comment content cannot be empty');
+    }
+    return this.postsService.addComment(postId, userId, content);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/comments')
+  async getComments(@Param('id') postId: string) {
+    return this.postsService.getComments(postId);
   }
 }

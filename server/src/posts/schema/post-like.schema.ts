@@ -1,13 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type PostLikeDocument = PostLike & Document;
 export const MAX_LIKES_PER_BUCKET = 1000;
 
 @Schema({ _id: false })
 export class LikeItem {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-  userId!: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  userId!: Types.ObjectId;
 
   @Prop({ type: Date, default: Date.now })
   createdAt!: Date;
@@ -19,8 +19,8 @@ export const LikeItemSchema = SchemaFactory.createForClass(LikeItem);
   timestamps: true, // Tự động quản lý createdAt và updatedAt cho bucket
 })
 export class PostLike {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Post', required: true })
-  postId!: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Post', required: true })
+  postId!: Types.ObjectId;
 
   // Số thứ tự của bucket (0, 1, 2...). Bucket lớn nhất là bucket mới nhất.
   @Prop({ type: Number, required: true, default: 0 })

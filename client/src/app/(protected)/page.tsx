@@ -1,15 +1,13 @@
 'use client';
 
 import { AnimatePresence } from 'framer-motion';
-import { Plus, Video, Image as ImageIcon, Smile, Loader2 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { Plus, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
 
 import { CreatePostModal } from '@/components/posts/CreatePostModal';
+import { CreatePostTrigger } from '@/components/posts/CreatePostTrigger';
 import { PostCard } from '@/components/posts/PostCard';
-import { type RootState } from '@/redux/store';
-import { type Post, type PostMedia } from '@/types/post.types';
-import apiClient from '@/utils/api/axios';
+import { usePosts } from '@/hooks/post/usePosts';
 
 // Interfaces
 interface Story {
@@ -21,13 +19,20 @@ interface Story {
 }
 
 export default function FeedPage() {
-  const { user } = useSelector((state: RootState) => state.user);
-
-  // States
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [initialUploadType, setInitialUploadType] = useState<'image' | 'video' | null>(null);
+  const {
+    user,
+    posts,
+    status,
+    hasMore,
+    showCreateModal,
+    initialUploadType,
+    observerRef,
+    handleLike,
+    handleOpenCreateModal,
+    handlePostCreated,
+    setShowCreateModal,
+    setInitialUploadType,
+  } = usePosts();
 
   const [stories] = useState<Story[]>([
     {
@@ -59,98 +64,6 @@ export default function FeedPage() {
       unread: false,
     },
   ]);
-
-  // Fetch all posts on load
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        setLoadingPosts(true);
-        const response = await apiClient.get('/posts');
-        const fetchedPosts = response.data.map(
-          (p: {
-            _id: string;
-            authorId?: {
-              username?: string;
-              profile?: {
-                fullName?: string;
-                avatar?: string;
-              };
-            };
-            publishedAt?: string;
-            createdAt?: string;
-            content?: string;
-            media?: PostMedia[];
-            likeCount?: number;
-            commentCount?: number;
-            shareCount?: number;
-          }) => ({
-            id: p._id,
-            author: {
-              name: p.authorId?.profile?.fullName || p.authorId?.username || 'User',
-              avatar: p.authorId?.profile?.avatar || 'https://i.pravatar.cc/150',
-            },
-            time: new Date(p.publishedAt || p.createdAt || '').toLocaleString('vi-VN'),
-            content: p.content || '',
-            media: p.media || [],
-            likes: p.likeCount || 0,
-            commentsCount: p.commentCount || 0,
-            shares: p.shareCount || 0,
-            hasLiked: false,
-          }),
-        );
-        setPosts(fetchedPosts);
-      } catch (err) {
-        console.error('Failed to fetch posts', err);
-      } finally {
-        setLoadingPosts(false);
-      }
-    };
-
-    fetchPosts();
-  }, []);
-
-  const handleLike = (postId: string) => {
-    setPosts(
-      posts.map((p) => {
-        if (p.id === postId) {
-          return {
-            ...p,
-            hasLiked: !p.hasLiked,
-            likes: p.hasLiked ? p.likes - 1 : p.likes + 1,
-          };
-        }
-        return p;
-      }),
-    );
-  };
-
-  const handleOpenCreateModal = (uploadType: 'image' | 'video' | null) => {
-    setInitialUploadType(uploadType);
-    setShowCreateModal(true);
-  };
-
-  const handlePostCreated = (newPostRaw: {
-    _id: string;
-    content?: string;
-    media?: PostMedia[];
-  }) => {
-    const newPost = {
-      id: newPostRaw._id,
-      author: {
-        name: user?.name || 'CurrentUser',
-        avatar: user?.avatar || 'https://i.pravatar.cc/150',
-      },
-      time: 'Just now',
-      content: newPostRaw.content || '',
-      media: newPostRaw.media || [],
-      likes: 0,
-      commentsCount: 0,
-      shares: 0,
-      hasLiked: false,
-    };
-    setPosts((prevPosts) => [newPost, ...prevPosts]);
-    setShowCreateModal(false);
-  };
 
   return (
     <div className="mx-auto w-full max-w-[680px] px-2 py-4 md:px-4">
@@ -200,61 +113,27 @@ export default function FeedPage() {
       </div>
 
       {/* Create Post Component Trigger */}
-      <div className="mb-5 rounded-xl bg-white p-4 shadow-xs border border-zinc-200/50 dark:bg-zinc-900 dark:border-zinc-800/50">
-        <div className="flex gap-2 items-center">
-          <img
-            src={user?.avatar || 'https://i.pravatar.cc/150'}
-            alt="My Profile"
-            className="h-10 w-10 rounded-full object-cover border border-zinc-100 dark:border-zinc-800"
-          />
-          <button
-            onClick={() => handleOpenCreateModal(null)}
-            className="flex-1 rounded-full bg-zinc-100 px-4 py-2.5 text-left text-sm text-zinc-500 hover:bg-zinc-200/80 transition-colors dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800/80 cursor-pointer"
-          >
-            What&apos;s on your mind, {user?.name?.split(' ')[0] || 'User'}?
-          </button>
-        </div>
-
-        <div className="mt-3 border-t border-zinc-105 dark:border-zinc-800 pt-3 flex items-center justify-between text-xs sm:text-sm font-semibold text-zinc-650 dark:text-zinc-400">
-          <button
-            onClick={() => handleOpenCreateModal('video')}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 cursor-pointer transition-colors"
-          >
-            <Video className="h-5 w-5 text-rose-500" />
-            <span>Live video</span>
-          </button>
-
-          <button
-            onClick={() => handleOpenCreateModal('image')}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 cursor-pointer transition-colors"
-          >
-            <ImageIcon className="h-5 w-5 text-emerald-500" />
-            <span>Photo/video</span>
-          </button>
-
-          <button
-            onClick={() => handleOpenCreateModal(null)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 cursor-pointer transition-colors"
-          >
-            <Smile className="h-5 w-5 text-amber-500" />
-            <span>Feeling/activity</span>
-          </button>
-        </div>
-      </div>
+      <CreatePostTrigger user={user} onClickTrigger={handleOpenCreateModal} />
 
       {/* Feed List */}
       <div className="space-y-4">
-        {loadingPosts ? (
-          <div className="flex justify-center items-center py-10">
-            <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
-          </div>
-        ) : posts.length === 0 ? (
+        {posts.length === 0 && status !== 'loading' ? (
           <div className="text-center py-10 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 text-zinc-500">
             No posts found. Create the first one!
           </div>
         ) : (
           posts.map((post) => <PostCard key={post.id} post={post} onLike={handleLike} />)
         )}
+
+        {/* Intersection Observer Target Trigger */}
+        <div ref={observerRef} className="h-12 flex justify-center items-center">
+          {status === 'loading' && <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />}
+          {!hasMore && posts.length > 0 && (
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold py-2">
+              You&apos;ve reached the end of the feed.
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Create Post Modal */}

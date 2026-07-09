@@ -22,3 +22,13 @@ export interface Post {
   shares: number;
   hasLiked?: boolean;
 }
+
+export interface Comment {
+  id: string;
+  author: {
+    name: string;
+    avatar: string;
+  };
+  content: string;
+  createdAt: string;
+}

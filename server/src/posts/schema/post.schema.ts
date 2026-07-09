@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type PostDocument = Post & Document;
 
@@ -30,8 +30,8 @@ export const MediaSchema = SchemaFactory.createForClass(Media);
   timestamps: true, // Tự động tạo và cập nhật 2 trường: createdAt và updatedAt
 })
 export class Post {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-  authorId!: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  authorId!: Types.ObjectId;
 
   // Nội dung bài viết hỗ trợ HTML, Markdown, và các định dạng khác. Có thể để trống nếu bài viết chỉ chứa media.
   @Prop({ default: '' })
@@ -52,11 +52,11 @@ export class Post {
   })
   visibility!: 'public' | 'friends' | 'private' | 'custom';
 
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }], default: [] })
-  visibleToIds!: MongooseSchema.Types.ObjectId[];
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  visibleToIds!: Types.ObjectId[];
 
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }], default: [] })
-  hiddenFromIds!: MongooseSchema.Types.ObjectId[];
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  hiddenFromIds!: Types.ObjectId[];
 
   // Trạng thái bài viết
   @Prop({
@@ -77,8 +77,8 @@ export class Post {
   @Prop({ type: Boolean, default: false })
   isShared!: boolean; // Xác định bài viết này có phải là bài share lại không
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Post', default: null })
-  originalPostId?: MongooseSchema.Types.ObjectId; // Link tới bài viết gốc
+  @Prop({ type: Types.ObjectId, ref: 'Post', default: null })
+  originalPostId?: Types.ObjectId; // Link tới bài viết gốc
 
   // Bộ đếm dữ liệu (Tối ưu hóa cho tác vụ Đọc - Read-heavy)
   @Prop({ type: Number, default: 0 })
@@ -94,8 +94,8 @@ export class Post {
   @Prop({ type: [String], default: [] })
   tags!: string[]; // Lưu các hashtag dưới dạng chữ thường (lowercase) để dễ tìm kiếm
 
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }], default: [] })
-  mentions!: MongooseSchema.Types.ObjectId[]; // Danh sách ID người dùng được tag trong bài viết
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  mentions!: Types.ObjectId[]; // Danh sách ID người dùng được tag trong bài viết
 
   // Các mốc thời gian
   @Prop({ type: Date, default: null })

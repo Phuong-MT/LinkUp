@@ -1,24 +1,9 @@
 import { motion } from 'framer-motion';
 import { X, Globe, ImageIcon, Video, Smile, Loader2 } from 'lucide-react';
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 
-import { type Post } from '@/types/post.types';
-import { type User } from '@/types/user.types';
-import apiClient from '@/utils/api/axios';
-import { resizeImage, resizeVideo } from '@/utils/media';
-
-interface UploadingFile {
-  id: string;
-  name: string;
-  type: 'image' | 'video';
-  status: 'compressing' | 'uploading' | 'success' | 'error';
-  url?: string;
-  error?: string;
-  width?: number;
-  height?: number;
-  duration?: number;
-  thumbnail?: string;
-}
+import { MediaGrid } from '@/components/posts/MediaGrid';
+import { useCreatePost } from '@/hooks/useCreatePost';
 
 interface CreatePostModalProps {
   user: {
@@ -28,18 +13,7 @@ interface CreatePostModalProps {
     avatar?: string;
   } | null;
   onClose: () => void;
-  onPostCreated: (newPost: {
-    _id: string;
-    content?: string;
-    media?: {
-      type: 'image' | 'video';
-      url: string;
-      width?: number;
-      height?: number;
-      duration?: number;
-      thumbnail?: string;
-    }[];
-  }) => void;
+  onPostCreated: () => void;
   initialUploadTrigger?: 'image' | 'video' | null;
 }
 
@@ -49,306 +23,17 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   onPostCreated,
   initialUploadTrigger,
 }) => {
-  const [postText, setPostText] = useState('');
-  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-  const isFirstRender = useRef(true);
-
-  // Trigger file selection if user clicked specific media buttons on Feed Card
-  useEffect(() => {
-    if (isFirstRender.current && initialUploadTrigger) {
-      isFirstRender.current = false;
-      setTimeout(() => {
-        if (initialUploadTrigger === 'image') {
-          fileInputRef.current?.click();
-        } else if (initialUploadTrigger === 'video') {
-          videoInputRef.current?.click();
-        }
-      }, 200);
-    }
-  }, [initialUploadTrigger]);
-
-  const uploadFiles = async (files: FileList) => {
-    const filesArray = Array.from(files);
-
-    for (const file of filesArray) {
-      const isImage = file.type.startsWith('image/');
-      const isVideo = file.type.startsWith('video/');
-
-      if (!isImage && !isVideo) {
-        alert('Unsupported file type. Only images and videos are supported.');
-        continue;
-      }
-
-      // 5MB limit for images, 20MB for videos
-      const limit = isImage ? 5 * 1024 * 1024 : 20 * 1024 * 1024;
-      const fileId = Math.random().toString(36).substring(2, 9);
-
-      const newUploadingFile: UploadingFile = {
-        id: fileId,
-        name: file.name,
-        type: isImage ? 'image' : 'video',
-        status: 'compressing',
-      };
-
-      setUploadingFiles((prev) => [...prev, newUploadingFile]);
-
-      if (file.size > limit) {
-        setUploadingFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileId
-              ? {
-                  ...f,
-                  status: 'error',
-                  error: `Size limit exceeded (${isImage ? '5MB' : '20MB'})`,
-                }
-              : f,
-          ),
-        );
-        continue;
-      }
-
-      let fileToUpload: File = file;
-
-      try {
-        if (isImage) {
-          fileToUpload = await resizeImage(file);
-        } else if (isVideo) {
-          fileToUpload = await resizeVideo(file);
-        }
-      } catch (compressionError) {
-        console.warn('Client-side compression failed, sending original file:', compressionError);
-      }
-
-      setUploadingFiles((prev) =>
-        prev.map((f) => (f.id === fileId ? { ...f, status: 'uploading' } : f)),
-      );
-
-      try {
-        const formData = new FormData();
-        formData.append('file', fileToUpload);
-
-        const response = await apiClient.post('/posts/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-
-        const uploadedMedia = response.data;
-
-        setUploadingFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileId
-              ? {
-                  ...f,
-                  status: 'success',
-                  url: uploadedMedia.url,
-                  width: uploadedMedia.width,
-                  height: uploadedMedia.height,
-                  duration: uploadedMedia.duration,
-                  thumbnail: uploadedMedia.thumbnail,
-                }
-              : f,
-          ),
-        );
-      } catch (err: unknown) {
-        const e = err as { response?: { data?: { message?: string } }; message?: string };
-        const errMsg = e.response?.data?.message || 'Upload failed';
-        setUploadingFiles((prev) =>
-          prev.map((f) => (f.id === fileId ? { ...f, status: 'error', error: errMsg } : f)),
-        );
-      }
-    }
-  };
-
-  const handleCreatePost = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const isUploading = uploadingFiles.some(
-      (f) => f.status === 'uploading' || f.status === 'compressing',
-    );
-    if (isUploading) {
-      alert('Please wait for files to finish processing.');
-      return;
-    }
-
-    const successfulMedia = uploadingFiles
-      .filter((f) => f.status === 'success')
-      .map((f) => ({
-        type: f.type,
-        url: f.url!,
-        width: f.width,
-        height: f.height,
-        duration: f.duration,
-        thumbnail: f.thumbnail,
-      }));
-
-    if (!postText.trim() && successfulMedia.length === 0) return;
-
-    try {
-      const response = await apiClient.post('/posts', {
-        content: postText,
-        media: successfulMedia,
-        visibility: 'public',
-      });
-
-      onPostCreated(response.data);
-      setPostText('');
-      setUploadingFiles([]);
-    } catch {
-      alert('Failed to complete post submission.');
-    }
-  };
-
-  // Helper method to render grid gallery for successfully uploaded files
-  const renderMediaPreview = (mediaList: UploadingFile[]) => {
-    if (mediaList.length === 0) return null;
-
-    const count = mediaList.length;
-
-    const removeMedia = (id: string) => {
-      setUploadingFiles((prev) => prev.filter((f) => f.id !== id));
-    };
-
-    // 1 file: full width (1/1)
-    if (count === 1) {
-      const item = mediaList[0];
-      return (
-        <div className="relative mb-4 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 max-h-[300px] bg-black">
-          {item.type === 'video' ? (
-            <video
-              src={item.url}
-              controls
-              poster={item.thumbnail}
-              className="w-full h-auto max-h-[300px] object-contain"
-            />
-          ) : (
-            <img
-              src={item.url}
-              alt="Uploaded attachment"
-              className="w-full h-auto max-h-[300px] object-cover"
-            />
-          )}
-          <button
-            type="button"
-            onClick={() => removeMedia(item.id)}
-            className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white hover:bg-black/80 transition-colors cursor-pointer"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      );
-    }
-
-    // 2 files: split screen layout (1/2 each)
-    if (count === 2) {
-      return (
-        <div className="grid grid-cols-2 gap-1 mb-4 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 h-[220px] bg-zinc-50 dark:bg-zinc-950">
-          {mediaList.map((item) => (
-            <div key={item.id} className="relative h-full bg-black">
-              {item.type === 'video' ? (
-                <video
-                  src={item.url}
-                  poster={item.thumbnail}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <img
-                  src={item.url}
-                  alt="Uploaded attachment"
-                  className="w-full h-full object-cover"
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => removeMedia(item.id)}
-                className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 transition-colors cursor-pointer z-10"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // 3 files: grid layout of 3 (1/3 or 1 large, 2 smaller)
-    if (count === 3) {
-      return (
-        <div className="grid grid-cols-3 gap-1 mb-4 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 h-[220px] bg-zinc-50 dark:bg-zinc-950">
-          {mediaList.map((item) => (
-            <div key={item.id} className="relative h-full bg-black">
-              {item.type === 'video' ? (
-                <video
-                  src={item.url}
-                  poster={item.thumbnail}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <img
-                  src={item.url}
-                  alt="Uploaded attachment"
-                  className="w-full h-full object-cover"
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => removeMedia(item.id)}
-                className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 transition-colors cursor-pointer z-10"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // 4 or more files: show 4 items in grid, with count overlay (1/8+) on 4th item if remaining files exist
-    const visibleMedia = mediaList.slice(0, 4);
-    const remainingCount = count - 4;
-
-    return (
-      <div className="grid grid-cols-2 gap-1 mb-4 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 h-[260px] bg-zinc-50 dark:bg-zinc-950">
-        {visibleMedia.map((item, index) => {
-          const isLastVisible = index === 3;
-          return (
-            <div key={item.id} className="relative h-[128px] bg-black">
-              {item.type === 'video' ? (
-                <video
-                  src={item.url}
-                  poster={item.thumbnail}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <img
-                  src={item.url}
-                  alt="Uploaded attachment"
-                  className="w-full h-full object-cover"
-                />
-              )}
-              {isLastVisible && remainingCount > 0 && (
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-lg select-none">
-                  +{remainingCount}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => removeMedia(item.id)}
-                className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 transition-colors cursor-pointer z-10"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const successFiles = uploadingFiles.filter((f) => f.status === 'success');
-  const pendingOrFailedFiles = uploadingFiles.filter((f) => f.status !== 'success');
+  const {
+    postText,
+    setPostText,
+    fileInputRef,
+    videoInputRef,
+    uploadFiles,
+    handleCreatePost,
+    removeMedia,
+    successFiles,
+    pendingOrFailedFiles,
+  } = useCreatePost({ user, onClose, onPostCreated, initialUploadTrigger });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
@@ -403,7 +88,16 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           />
 
           {/* Media Grid Gallery Preview (Only for successfully uploaded items) */}
-          {renderMediaPreview(successFiles)}
+          <MediaGrid
+            media={successFiles.map((f) => ({
+              id: f.id,
+              type: f.type,
+              url: f.url || '',
+              thumbnail: f.thumbnail,
+            }))}
+            isEditable={true}
+            onRemove={(index) => removeMedia(successFiles[index].id)}
+          />
 
           {/* Hidden File Inputs */}
           <input
@@ -463,9 +157,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() =>
-                      setUploadingFiles((prev) => prev.filter((f) => f.id !== file.id))
-                    }
+                    onClick={() => removeMedia(file.id)}
                     className="text-zinc-400 hover:text-zinc-600 dark:hover:text-white p-1 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors shrink-0 cursor-pointer"
                   >
                     <X className="h-4 w-4" />
@@ -510,9 +202,10 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           <button
             type="submit"
             disabled={
-              (!postText.trim() &&
-                uploadingFiles.filter((f) => f.status === 'success').length === 0) ||
-              uploadingFiles.some((f) => f.status === 'uploading' || f.status === 'compressing')
+              (!postText.trim() && successFiles.length === 0) ||
+              pendingOrFailedFiles.some(
+                (f) => f.status === 'uploading' || f.status === 'compressing',
+              )
             }
             className="w-full rounded-lg bg-blue-600 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-zinc-250 disabled:text-zinc-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-650 transition-colors cursor-pointer"
           >
