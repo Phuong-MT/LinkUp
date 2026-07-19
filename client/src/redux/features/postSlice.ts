@@ -7,6 +7,7 @@ import {
   createPostAsync,
   fetchCommentsAsync,
   createCommentAsync,
+  toggleLikePostAsync,
 } from './postThunks';
 
 interface PostState {
@@ -128,6 +129,34 @@ const postSlice = createSlice({
         const post = state.posts.find((p) => p.id === postId);
         if (post) {
           post.commentsCount += 1;
+        }
+      })
+      .addCase(toggleLikePostAsync.pending, (state, action) => {
+        const postId = action.meta.arg;
+        const existingPost = state.posts.find((p) => p.id === postId);
+        if (existingPost) {
+          existingPost.hasLiked = !existingPost.hasLiked;
+          existingPost.likes = existingPost.hasLiked
+            ? existingPost.likes + 1
+            : existingPost.likes - 1;
+        }
+      })
+      .addCase(toggleLikePostAsync.fulfilled, (state, action) => {
+        const { postId, hasLiked, likeCount } = action.payload;
+        const existingPost = state.posts.find((p) => p.id === postId);
+        if (existingPost) {
+          existingPost.hasLiked = hasLiked;
+          existingPost.likes = likeCount;
+        }
+      })
+      .addCase(toggleLikePostAsync.rejected, (state, action) => {
+        const postId = action.meta.arg;
+        const existingPost = state.posts.find((p) => p.id === postId);
+        if (existingPost) {
+          existingPost.hasLiked = !existingPost.hasLiked;
+          existingPost.likes = existingPost.hasLiked
+            ? existingPost.likes + 1
+            : existingPost.likes - 1;
         }
       });
   },

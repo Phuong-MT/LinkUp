@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { resetPostsState, toggleLikePost } from '@/redux/features/postSlice';
-import { fetchPostsAsync } from '@/redux/features/postThunks';
+import { resetPostsState } from '@/redux/features/postSlice';
+import { fetchPostsAsync, toggleLikePostAsync } from '@/redux/features/postThunks';
 import { type RootState, type AppDispatch } from '@/redux/store';
 
 export const usePosts = () => {
@@ -66,7 +66,7 @@ export const usePosts = () => {
   }, [dispatch, status, hasMore, skip]);
 
   const handleLike = (postId: string) => {
-    dispatch(toggleLikePost(postId));
+    dispatch(toggleLikePostAsync(postId));
   };
 
   const handleOpenCreateModal = (uploadType: 'image' | 'video' | null) => {

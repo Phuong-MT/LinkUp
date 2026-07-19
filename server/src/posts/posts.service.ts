@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model, Types } from 'mongoose';
 import { DBName } from 'src/utils/connectDB';
 import { Post, PostDocument } from './schema/post.schema';
 import {
@@ -8,6 +8,7 @@ import {
   PostComment,
   PostCommentDocument,
 } from './schema/post-comment.schema';
+import { MAX_LIKES_PER_BUCKET, PostLike, PostLikeDocument } from './schema/post-like.schema';
 import { CloudService, UploadFile } from '../cloud/cloud.service';
 
 export interface PopulatedCommentItem {
@@ -35,6 +36,10 @@ export class PostsService {
     private readonly postModel: Model<PostDocument>,
     @InjectModel(PostComment.name, DBName.linkUpDB)
     private readonly postCommentModel: Model<PostCommentDocument>,
+    @InjectModel(PostLike.name, DBName.linkUpDB)
+    private readonly postLikeModel: Model<PostLikeDocument>,
+    @InjectConnection(DBName.linkUpDB)
+    private readonly connection: Connection,
     private readonly cloudService: CloudService,
   ) {}
 
@@ -115,62 +120,182 @@ export class PostsService {
     return newPost.save();
   }
 
-  async findAll(limit = 10, skip = 0): Promise<PostDocument[]> {
-    return this.postModel
+  async findAll(limit = 10, skip = 0, userId?: string): Promise<any[]> {
+    const posts = await this.postModel
       .find({ status: 'active' })
       .populate('authorId', 'username profile')
       .sort({ publishedAt: -1 })
       .skip(skip)
       .limit(limit)
       .exec();
+
+    if (!userId) {
+      return posts.map((post) => ({
+        ...post.toObject(),
+        hasLiked: false,
+      }));
+    }
+
+    const postIds = posts.map((p) => p._id);
+    const likes = await this.postLikeModel.find(
+      {
+        postId: { $in: postIds },
+        'likes.userId': new Types.ObjectId(userId),
+      },
+      { postId: 1 },
+    );
+
+    const likedPostIds = new Set(likes.map((l) => String(l.postId)));
+
+    return posts.map((post) => ({
+      ...post.toObject(),
+      hasLiked: likedPostIds.has(String(post._id)),
+    }));
+  }
+
+  async toggleLikePost(
+    postId: string,
+    userId: string,
+  ): Promise<{ hasLiked: boolean; likeCount: number }> {
+    const session = await this.connection.startSession();
+    session.startTransaction();
+    try {
+      // 1. Check if user already liked the post
+      const existingLikeBucket = await this.postLikeModel
+        .findOne({
+          postId: new Types.ObjectId(postId),
+          'likes.userId': new Types.ObjectId(userId),
+        })
+        .session(session);
+
+      if (existingLikeBucket) {
+        // Unlike flow
+        await this.postLikeModel.updateOne(
+          { _id: existingLikeBucket._id },
+          {
+            $pull: { likes: { userId: new Types.ObjectId(userId) } },
+            $inc: { count: -1 },
+          },
+          { session },
+        );
+
+        const updatedPost = await this.postModel
+          .findByIdAndUpdate(postId, { $inc: { likeCount: -1 } }, { returnDocument: 'after' })
+          .session(session);
+
+        await session.commitTransaction();
+
+        return {
+          hasLiked: false,
+          likeCount: updatedPost?.likeCount || 0,
+        };
+      }
+
+      // Like flow: Find latest bucket
+      let latestBucket = await this.postLikeModel
+        .findOne({ postId: new Types.ObjectId(postId) })
+        .sort({ bucket: -1 })
+        .session(session)
+        .exec();
+
+      if (!latestBucket || latestBucket.count >= MAX_LIKES_PER_BUCKET) {
+        const nextBucketNum = latestBucket ? latestBucket.bucket + 1 : 0;
+        latestBucket = new this.postLikeModel({
+          postId: new Types.ObjectId(postId),
+          bucket: nextBucketNum,
+          likes: [],
+          count: 0,
+        });
+      }
+
+      latestBucket.likes.push({
+        userId: new Types.ObjectId(userId),
+        createdAt: new Date(),
+      });
+      latestBucket.count += 1;
+      await latestBucket.save({ session });
+
+      const updatedPost = await this.postModel
+        .findByIdAndUpdate(postId, { $inc: { likeCount: 1 } }, { returnDocument: 'after' })
+        .session(session);
+
+      await session.commitTransaction();
+
+      return {
+        hasLiked: true,
+        likeCount: updatedPost?.likeCount || 0,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
   }
 
   async addComment(postId: string, authorId: string, content: string) {
-    const filter: Record<string, unknown> = { postId: new Types.ObjectId(postId) };
-    let latestBucket = await this.postCommentModel.findOne(filter).sort({ bucket: -1 }).exec();
+    const session = await this.connection.startSession();
+    session.startTransaction();
+    try {
+      const filter: Record<string, unknown> = { postId: new Types.ObjectId(postId) };
+      let latestBucket = await this.postCommentModel
+        .findOne(filter)
+        .sort({ bucket: -1 })
+        .session(session)
+        .exec();
 
-    if (!latestBucket || latestBucket.count >= MAX_COMMENT_PER_BUCKET) {
-      const nextBucketNum = latestBucket ? latestBucket.bucket + 1 : 0;
-      latestBucket = new this.postCommentModel({
+      if (!latestBucket || latestBucket.count >= MAX_COMMENT_PER_BUCKET) {
+        const nextBucketNum = latestBucket ? latestBucket.bucket + 1 : 0;
+        latestBucket = new this.postCommentModel({
+          postId: new Types.ObjectId(postId),
+          bucket: nextBucketNum,
+          comments: [],
+          count: 0,
+        });
+      }
+
+      const commentId = new Types.ObjectId();
+      const newComment = {
+        commentId,
+        authorId: new Types.ObjectId(authorId),
+        content,
+        mentions: [],
+        likeCount: 0,
+        replies: [],
+        replyCount: 0,
+        status: 'active' as const,
+        createdAt: new Date(),
+      };
+
+      latestBucket.comments.push(newComment);
+      latestBucket.count += 1;
+      await latestBucket.save({ session });
+
+      await this.postModel
+        .findByIdAndUpdate(postId, { $inc: { commentCount: 1 } })
+        .session(session);
+
+      await session.commitTransaction();
+
+      const query: Record<string, unknown> = {
         postId: new Types.ObjectId(postId),
-        bucket: nextBucketNum,
-        comments: [],
-        count: 0,
-      });
+        bucket: latestBucket.bucket,
+      };
+      const updatedBucket = await this.postCommentModel
+        .findOne(query)
+        .populate('comments.authorId', 'username profile')
+        .exec();
+
+      const created = updatedBucket?.comments.find(
+        (c) => String(c.commentId) === commentId.toHexString(),
+      );
+      return created;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
     }
-
-    const commentId = new Types.ObjectId();
-    const newComment = {
-      commentId,
-      authorId: new Types.ObjectId(authorId),
-      content,
-      mentions: [],
-      likeCount: 0,
-      replies: [],
-      replyCount: 0,
-      status: 'active' as const,
-      createdAt: new Date(),
-    };
-
-    latestBucket.comments.push(newComment);
-    latestBucket.count += 1;
-    await latestBucket.save();
-
-    await this.postModel.findByIdAndUpdate(postId, { $inc: { commentCount: 1 } });
-
-    const query: Record<string, unknown> = {
-      postId: new Types.ObjectId(postId),
-      bucket: latestBucket.bucket,
-    };
-    const updatedBucket = await this.postCommentModel
-      .findOne(query)
-      .populate('comments.authorId', 'username profile')
-      .exec();
-
-    const created = updatedBucket?.comments.find(
-      (c) => String(c.commentId) === commentId.toHexString(),
-    );
-    return created;
   }
 
   async getComments(postId: string): Promise<PopulatedCommentItem[]> {

@@ -28,6 +28,7 @@ interface RawPostResponse {
   likeCount?: number;
   commentCount?: number;
   shareCount?: number;
+  hasLiked?: boolean;
 }
 
 interface RawCommentResponse {
@@ -63,7 +64,7 @@ export const fetchPostsAsync = createAsyncThunk(
         likes: p.likeCount || 0,
         commentsCount: p.commentCount || 0,
         shares: p.shareCount || 0,
-        hasLiked: false,
+        hasLiked: p.hasLiked || false,
       }));
       return fetchedPosts;
     } catch (err: unknown) {
@@ -148,6 +149,25 @@ export const createCommentAsync = createAsyncThunk(
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; message?: string };
       return rejectWithValue(e.response?.data?.message || e.message || 'Failed to create comment');
+    }
+  },
+);
+
+export const toggleLikePostAsync = createAsyncThunk(
+  'post/toggleLikePost',
+  async (postId: string, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post<{ hasLiked: boolean; likeCount: number }>(
+        `/posts/${postId}/like`,
+      );
+      return {
+        postId,
+        hasLiked: response.data.hasLiked,
+        likeCount: response.data.likeCount,
+      };
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      return rejectWithValue(e.response?.data?.message || e.message || 'Failed to toggle like');
     }
   },
 );

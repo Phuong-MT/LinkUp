@@ -72,10 +72,25 @@ export class PostsController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async getPosts(@Query('limit') limit?: string, @Query('skip') skip?: string) {
+  async getPosts(
+    @Req() req: { user?: { userId?: string } },
+    @Query('limit') limit?: string,
+    @Query('skip') skip?: string,
+  ) {
+    const userId = req.user?.userId;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const skipNum = skip ? parseInt(skip, 10) : 0;
-    return this.postsService.findAll(limitNum, skipNum);
+    return this.postsService.findAll(limitNum, skipNum, userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/like')
+  async toggleLikePost(@Req() req: { user?: { userId?: string } }, @Param('id') postId: string) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new BadRequestException('User ID not found in token');
+    }
+    return this.postsService.toggleLikePost(postId, userId);
   }
 
   @UseGuards(JwtAuthGuard)
