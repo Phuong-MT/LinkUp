@@ -8,6 +8,7 @@ import {
   fetchCommentsAsync,
   createCommentAsync,
   toggleLikePostAsync,
+  sharePostAsync,
 } from './postThunks';
 
 interface PostState {
@@ -157,6 +158,16 @@ const postSlice = createSlice({
           existingPost.likes = existingPost.hasLiked
             ? existingPost.likes + 1
             : existingPost.likes - 1;
+        }
+      })
+      .addCase(sharePostAsync.fulfilled, (state, action) => {
+        const { sharedPost, targetPostId, sharesCount } = action.payload;
+        state.posts.unshift(sharedPost);
+        state.skip += 1;
+
+        const originalPost = state.posts.find((p) => p.id === targetPostId);
+        if (originalPost) {
+          originalPost.shares = sharesCount;
         }
       });
   },

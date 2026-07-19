@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { CreatePostModal } from '@/components/posts/CreatePostModal';
 import { CreatePostTrigger } from '@/components/posts/CreatePostTrigger';
 import { PostCard } from '@/components/posts/PostCard';
+import { SharePostModal } from '@/components/posts/SharePostModal';
 import { usePosts } from '@/hooks/post/usePosts';
 
 // Interfaces
@@ -27,11 +28,16 @@ export default function FeedPage() {
     showCreateModal,
     initialUploadType,
     observerRef,
+    sharingPost,
+    isSharingSubmitting,
     handleLike,
     handleOpenCreateModal,
     handlePostCreated,
+    handleShareTrigger,
+    handleShareSubmit,
     setShowCreateModal,
     setInitialUploadType,
+    setSharingPost,
   } = usePosts();
 
   const [stories] = useState<Story[]>([
@@ -122,7 +128,9 @@ export default function FeedPage() {
             No posts found. Create the first one!
           </div>
         ) : (
-          posts.map((post) => <PostCard key={post.id} post={post} onLike={handleLike} />)
+          posts.map((post) => (
+            <PostCard key={post.id} post={post} onLike={handleLike} onShare={handleShareTrigger} />
+          ))
         )}
 
         {/* Intersection Observer Target Trigger */}
@@ -136,7 +144,7 @@ export default function FeedPage() {
         </div>
       </div>
 
-      {/* Create Post Modal */}
+      {/* Create & Share Post Modals */}
       <AnimatePresence>
         {showCreateModal && (
           <CreatePostModal
@@ -147,6 +155,16 @@ export default function FeedPage() {
             }}
             onPostCreated={handlePostCreated}
             initialUploadTrigger={initialUploadType}
+          />
+        )}
+
+        {sharingPost && (
+          <SharePostModal
+            post={sharingPost}
+            user={user}
+            onClose={() => setSharingPost(null)}
+            onShare={handleShareSubmit}
+            isSubmitting={isSharingSubmitting}
           />
         )}
       </AnimatePresence>

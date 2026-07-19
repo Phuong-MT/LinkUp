@@ -29,6 +29,8 @@ interface RawPostResponse {
   commentCount?: number;
   shareCount?: number;
   hasLiked?: boolean;
+  isShared?: boolean;
+  originalPostId?: RawPostResponse | null;
 }
 
 interface RawCommentResponse {
@@ -44,6 +46,23 @@ interface RawCommentResponse {
   createdAt?: string;
 }
 
+export const mapRawPost = (p: RawPostResponse): Post => ({
+  id: p._id,
+  author: {
+    name: p.authorId?.profile?.fullName || p.authorId?.username || 'User',
+    avatar: p.authorId?.profile?.avatar || 'https://i.pravatar.cc/150',
+  },
+  time: new Date(p.publishedAt || p.createdAt || '').toLocaleString('vi-VN'),
+  content: p.content || '',
+  media: p.media || [],
+  likes: p.likeCount || 0,
+  commentsCount: p.commentCount || 0,
+  shares: p.shareCount || 0,
+  hasLiked: p.hasLiked || false,
+  isShared: p.isShared || false,
+  originalPost: p.originalPostId ? mapRawPost(p.originalPostId) : null,
+});
+
 export const fetchPostsAsync = createAsyncThunk(
   'post/fetchPosts',
   async (arg: { limit: number; skip: number; signal?: AbortSignal }, { rejectWithValue }) => {
@@ -52,20 +71,7 @@ export const fetchPostsAsync = createAsyncThunk(
         params: { limit: arg.limit, skip: arg.skip },
         signal: arg.signal,
       });
-      const fetchedPosts: Post[] = response.data.map((p) => ({
-        id: p._id,
-        author: {
-          name: p.authorId?.profile?.fullName || p.authorId?.username || 'User',
-          avatar: p.authorId?.profile?.avatar || 'https://i.pravatar.cc/150',
-        },
-        time: new Date(p.publishedAt || p.createdAt || '').toLocaleString('vi-VN'),
-        content: p.content || '',
-        media: p.media || [],
-        likes: p.likeCount || 0,
-        commentsCount: p.commentCount || 0,
-        shares: p.shareCount || 0,
-        hasLiked: p.hasLiked || false,
-      }));
+      const fetchedPosts: Post[] = response.data.map((p) => mapRawPost(p));
       return fetchedPosts;
     } catch (err: unknown) {
       const e = err as {
@@ -168,6 +174,27 @@ export const toggleLikePostAsync = createAsyncThunk(
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } }; message?: string };
       return rejectWithValue(e.response?.data?.message || e.message || 'Failed to toggle like');
+    }
+  },
+);
+
+export const sharePostAsync = createAsyncThunk(
+  'post/sharePost',
+  async (arg: { postId: string; content?: string }, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.post<{
+        sharedPost: RawPostResponse;
+        targetPostId: string;
+        sharesCount: number;
+      }>(`/posts/${arg.postId}/share`, { content: arg.content });
+      return {
+        sharedPost: mapRawPost(response.data.sharedPost),
+        targetPostId: response.data.targetPostId,
+        sharesCount: response.data.sharesCount,
+      };
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      return rejectWithValue(e.response?.data?.message || e.message || 'Failed to share post');
     }
   },
 );

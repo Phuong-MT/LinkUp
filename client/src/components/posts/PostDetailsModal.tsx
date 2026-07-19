@@ -1,8 +1,18 @@
 import { motion } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Send, Loader2, MessageSquare, ThumbsUp } from 'lucide-react';
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Send,
+  Loader2,
+  MessageSquare,
+  ThumbsUp,
+  Share2,
+} from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
+import { ExpandableText } from '@/components/posts/ExpandableText';
 import { fetchCommentsAsync, createCommentAsync } from '@/redux/features/postThunks';
 import { type RootState, type AppDispatch } from '@/redux/store';
 import { type Post } from '@/types/post.types';
@@ -11,9 +21,15 @@ interface PostDetailsModalProps {
   post: Post;
   onClose: () => void;
   onLike: (id: string) => void;
+  onShare?: (post: Post) => void;
 }
 
-export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({ post, onClose, onLike }) => {
+export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({
+  post,
+  onClose,
+  onLike,
+  onShare,
+}) => {
   const dispatch = useDispatch<AppDispatch>();
   const comments = useSelector((state: RootState) => state.post.commentsByPostId[post.id] || []);
   const commentsStatus = useSelector(
@@ -38,11 +54,11 @@ export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({ post, onClos
       alert('Failed to send comment.');
     }
   };
-
-  const hasMedia = post.media && post.media.length > 0;
-  const mediaCount = post.media ? post.media.length : 0;
-  const currentMedia = hasMedia && post.media ? post.media[activeMediaIndex] : null;
-
+  const targetPostForMedia = post.isShared && post.originalPost ? post.originalPost : post;
+  const hasMedia = targetPostForMedia.media && targetPostForMedia.media.length > 0;
+  const mediaCount = targetPostForMedia.media ? targetPostForMedia.media.length : 0;
+  const currentMedia =
+    hasMedia && targetPostForMedia.media ? targetPostForMedia.media[activeMediaIndex] : null;
   const handlePrevMedia = () => {
     setActiveMediaIndex((prev) => (prev > 0 ? prev - 1 : mediaCount - 1));
   };
@@ -139,9 +155,39 @@ export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({ post, onClos
           {/* Post Content & Comments Body */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* Content text */}
-            <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
-              {post.content}
-            </p>
+            {post.content && (
+              <ExpandableText
+                text={post.content}
+                className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap"
+              />
+            )}
+
+            {/* Nested Original Post details for Shared Posts */}
+            {post.isShared && post.originalPost && (
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-950/20 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-850/30 transition-colors">
+                <div className="flex gap-2 items-center mb-2">
+                  <img
+                    src={post.originalPost.author.avatar}
+                    alt={post.originalPost.author.name}
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                  <div>
+                    <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
+                      {post.originalPost.author.name}
+                    </h4>
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                      {post.originalPost.time}
+                    </span>
+                  </div>
+                </div>
+                {post.originalPost.content && (
+                  <ExpandableText
+                    text={post.originalPost.content}
+                    className="text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap"
+                  />
+                )}
+              </div>
+            )}
 
             {/* Interaction Buttons row */}
             <div className="flex items-center justify-between border-y border-zinc-150 dark:border-zinc-800 py-2.5 text-zinc-500 dark:text-zinc-400 text-xs font-semibold">
@@ -158,6 +204,13 @@ export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({ post, onClos
                 <MessageSquare className="h-4.5 w-4.5" />
                 <span>{post.commentsCount} Comment</span>
               </div>
+              <button
+                onClick={() => onShare && onShare(post)}
+                className="flex flex-1 items-center justify-center gap-2 py-1 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg cursor-pointer transition-colors"
+              >
+                <Share2 className="h-4.5 w-4.5" />
+                <span>{post.shares} Share</span>
+              </button>
             </div>
 
             {/* Comments List */}

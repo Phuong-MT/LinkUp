@@ -124,6 +124,10 @@ export class PostsService {
     const posts = await this.postModel
       .find({ status: 'active' })
       .populate('authorId', 'username profile')
+      .populate({
+        path: 'originalPostId',
+        populate: { path: 'authorId', select: 'username profile' },
+      })
       .sort({ publishedAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -315,5 +319,86 @@ export class PostsService {
     }
 
     return allComments.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async sharePost(
+    postId: string,
+    userId: string,
+    caption?: string,
+  ): Promise<{ sharedPost: any; targetPostId: Types.ObjectId; sharesCount: number }> {
+    const session = await this.connection.startSession();
+    session.startTransaction();
+    try {
+      // 1. Verify original post
+      const originalPost = await this.postModel.findById(postId).session(session).exec();
+      if (!originalPost) {
+        throw new BadRequestException('Original post not found');
+      }
+
+      // If the post being shared is already a shared post, we share the original post directly.
+      const targetPostId =
+        originalPost.isShared && originalPost.originalPostId
+          ? originalPost.originalPostId
+          : originalPost._id;
+
+      // 2. Increment shareCount on the target post
+      const updatedOriginal = await this.postModel
+        .findByIdAndUpdate(
+          targetPostId,
+          { $inc: { shareCount: 1 } },
+          { returnDocument: 'after', session },
+        )
+        .exec();
+
+      // 3. Create unique slug
+      const contentExcerpt = caption
+        ? caption
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .substring(0, 50)
+        : 'shared';
+      const uniqueId = Math.random().toString(36).substring(2, 8);
+      const slug = `${contentExcerpt || 'shared'}-${uniqueId}`;
+
+      // 4. Create the shared post document
+      const sharedPost = new this.postModel({
+        authorId: new Types.ObjectId(userId),
+        content: caption || '',
+        slug,
+        isShared: true,
+        originalPostId: targetPostId,
+        media: [],
+        status: 'active',
+      });
+
+      await sharedPost.save({ session });
+
+      await session.commitTransaction();
+
+      // 5. Populate and return
+      const populated = await this.postModel
+        .findById(sharedPost._id)
+        .populate('authorId', 'username profile')
+        .populate({
+          path: 'originalPostId',
+          populate: { path: 'authorId', select: 'username profile' },
+        })
+        .exec();
+
+      return {
+        sharedPost: populated,
+        targetPostId,
+        sharesCount: updatedOriginal?.shareCount || 0,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
   }
 }

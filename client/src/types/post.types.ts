@@ -21,6 +21,8 @@ export interface Post {
   commentsCount: number;
   shares: number;
   hasLiked?: boolean;
+  isShared?: boolean;
+  originalPost?: Post | null;
 }
 
 export interface Comment {

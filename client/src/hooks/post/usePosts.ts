@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { resetPostsState } from '@/redux/features/postSlice';
-import { fetchPostsAsync, toggleLikePostAsync } from '@/redux/features/postThunks';
+import { fetchPostsAsync, toggleLikePostAsync, sharePostAsync } from '@/redux/features/postThunks';
 import { type RootState, type AppDispatch } from '@/redux/store';
+import { type Post } from '@/types/post.types';
 
 export const usePosts = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -13,6 +14,8 @@ export const usePosts = () => {
   // Modal visibility states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [initialUploadType, setInitialUploadType] = useState<'image' | 'video' | null>(null);
+  const [sharingPost, setSharingPost] = useState<Post | null>(null);
+  const [isSharingSubmitting, setIsSharingSubmitting] = useState(false);
 
   // Refs for Infinite Scroll and AbortController
   const observerRef = useRef<HTMLDivElement | null>(null);
@@ -78,6 +81,23 @@ export const usePosts = () => {
     setShowCreateModal(false);
   };
 
+  const handleShareTrigger = (post: Post) => {
+    setSharingPost(post);
+  };
+
+  const handleShareSubmit = async (caption: string) => {
+    if (!sharingPost) return;
+    setIsSharingSubmitting(true);
+    try {
+      await dispatch(sharePostAsync({ postId: sharingPost.id, content: caption })).unwrap();
+      setSharingPost(null);
+    } catch {
+      alert('Failed to share post.');
+    } finally {
+      setIsSharingSubmitting(false);
+    }
+  };
+
   return {
     user,
     posts,
@@ -86,10 +106,15 @@ export const usePosts = () => {
     showCreateModal,
     initialUploadType,
     observerRef,
+    sharingPost,
+    isSharingSubmitting,
     handleLike,
     handleOpenCreateModal,
     handlePostCreated,
+    handleShareTrigger,
+    handleShareSubmit,
     setShowCreateModal,
     setInitialUploadType,
+    setSharingPost,
   };
 };

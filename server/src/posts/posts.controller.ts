@@ -115,4 +115,18 @@ export class PostsController {
   async getComments(@Param('id') postId: string) {
     return this.postsService.getComments(postId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/share')
+  async sharePost(
+    @Req() req: { user?: { userId?: string } },
+    @Param('id') postId: string,
+    @Body('content') content?: string,
+  ) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new BadRequestException('User ID not found in token');
+    }
+    return this.postsService.sharePost(postId, userId, content);
+  }
 }
