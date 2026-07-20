@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export enum UserRole {
   SUPER_ADMIN = 'SUPER_ADMIN',
@@ -66,6 +66,9 @@ export class User {
   // soft delete
   @Prop({ default: false })
   isDeleted!: boolean;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  friends!: Types.ObjectId[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

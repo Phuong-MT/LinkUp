@@ -4,6 +4,8 @@ import React, { useState, useMemo } from 'react';
 
 import { type Post } from '@/types/post.types';
 
+import { MentionTextarea } from './MentionTextarea';
+
 interface SharePostModalProps {
   post: Post;
   user: {
@@ -131,9 +133,9 @@ export const SharePostModal: React.FC<SharePostModalProps> = ({
           </div>
 
           {/* Caption Input (Fixed height to prevent layout shifts) */}
-          <textarea
+          <MentionTextarea
             value={caption}
-            onChange={(e) => setCaption(e.target.value)}
+            onChangeValue={setCaption}
             placeholder="Say something about this..."
             className="w-full h-24 resize-none border-0 bg-transparent text-sm text-zinc-800 outline-none placeholder-zinc-400 dark:text-zinc-200 dark:placeholder-zinc-500 overflow-y-auto"
           />

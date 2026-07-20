@@ -24,10 +24,31 @@ export const ExpandableText: React.FC<ExpandableTextProps> = ({
     }
   };
 
+  const renderTextWithMentions = (txt: string) => {
+    if (!txt) return '';
+    const parts = txt.split(/(@[a-zA-Z0-9_]+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        return (
+          <span
+            key={i}
+            className="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
   if (!needsTruncation) {
     return (
       <p className={className} onClick={handleParagraphClick}>
-        {text}
+        {renderTextWithMentions(text)}
       </p>
     );
   }
@@ -36,7 +57,7 @@ export const ExpandableText: React.FC<ExpandableTextProps> = ({
     return (
       <div className="mb-3">
         <p className={className} onClick={handleParagraphClick}>
-          {text}
+          {renderTextWithMentions(text)}
         </p>
         <button
           onClick={(e) => {
@@ -63,14 +84,14 @@ export const ExpandableText: React.FC<ExpandableTextProps> = ({
   return (
     <div className="mb-3">
       <p className={className} onClick={handleParagraphClick}>
-        {truncatedText}
+        {renderTextWithMentions(truncatedText)}
       </p>
       <button
         onClick={(e) => {
           e.stopPropagation();
           setIsExpanded(true);
         }}
-        className="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline mt-0.5 focus:outline-none cursor-pointer block"
+        className="text-xs text-blue-650 dark:text-blue-400 font-semibold hover:underline mt-0.5 focus:outline-none cursor-pointer block"
       >
         See more
       </button>

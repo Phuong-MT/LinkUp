@@ -7,6 +7,7 @@ import { PostLike, PostLikeSchema } from './schema/post-like.schema';
 import { PostComment, PostCommentSchema } from './schema/post-comment.schema';
 import { DBName } from 'src/utils/connectDB';
 import { CloudModule } from '../cloud/cloud.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CloudModule } from '../cloud/cloud.module';
       DBName.linkUpDB,
     ),
     CloudModule,
+    UserModule,
   ],
   controllers: [PostsController],
   providers: [PostsService],

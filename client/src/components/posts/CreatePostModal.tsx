@@ -5,6 +5,8 @@ import React from 'react';
 import { MediaGrid } from '@/components/posts/MediaGrid';
 import { useCreatePost } from '@/hooks/post/useCreatePost';
 
+import { MentionTextarea } from './MentionTextarea';
+
 interface CreatePostModalProps {
   user: {
     id?: string;
@@ -78,9 +80,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           </div>
 
           {/* Text Input */}
-          <textarea
+          <MentionTextarea
             value={postText}
-            onChange={(e) => setPostText(e.target.value)}
+            onChangeValue={setPostText}
             placeholder={`What's on your mind, ${user?.name?.split(' ')[0] || 'User'}?`}
             rows={4}
             className="w-full resize-none border-0 bg-transparent text-base text-zinc-900 outline-none placeholder-zinc-450 dark:text-zinc-100 focus:ring-0"
