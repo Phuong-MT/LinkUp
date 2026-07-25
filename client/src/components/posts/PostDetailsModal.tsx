@@ -42,7 +42,10 @@ export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
 
   useEffect(() => {
-    dispatch(fetchCommentsAsync(post.id));
+    const promise = dispatch(fetchCommentsAsync({ postId: post.id }));
+    return () => {
+      promise.abort();
+    };
   }, [dispatch, post.id]);
 
   const handleSendComment = async (e: React.FormEvent) => {

@@ -133,9 +133,11 @@ export const createPostAsync = createAsyncThunk(
 
 export const fetchCommentsAsync = createAsyncThunk(
   'post/fetchComments',
-  async (postId: string, { rejectWithValue }) => {
+  async (arg: { postId: string }, { signal, rejectWithValue }) => {
     try {
-      const response = await apiClient.get<RawCommentResponse[]>(`/posts/${postId}/comments`);
+      const response = await apiClient.get<RawCommentResponse[]>(`/posts/${arg.postId}/comments`, {
+        signal,
+      });
       const comments: Comment[] = response.data.map((c) => ({
         id: c.commentId,
         author: {
@@ -146,9 +148,16 @@ export const fetchCommentsAsync = createAsyncThunk(
         createdAt: new Date(c.createdAt || '').toLocaleString('vi-VN'),
         mentions: c.mentions ? c.mentions.map(mapRawMention) : [],
       }));
-      return { postId, comments };
+      return { postId: arg.postId, comments };
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      const e = err as {
+        name?: string;
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      if (e.name === 'CanceledError' || e.name === 'AbortError') {
+        return rejectWithValue('ABORTED');
+      }
       return rejectWithValue(e.response?.data?.message || e.message || 'Failed to fetch comments');
     }
   },

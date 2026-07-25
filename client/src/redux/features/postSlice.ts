@@ -110,7 +110,7 @@ const postSlice = createSlice({
         state.skip += 1;
       })
       .addCase(fetchCommentsAsync.pending, (state, action) => {
-        const postId = action.meta.arg;
+        const { postId } = action.meta.arg;
         state.commentsStatus[postId] = 'loading';
       })
       .addCase(fetchCommentsAsync.fulfilled, (state, action) => {
@@ -119,7 +119,10 @@ const postSlice = createSlice({
         state.commentsByPostId[postId] = comments;
       })
       .addCase(fetchCommentsAsync.rejected, (state, action) => {
-        const postId = action.meta.arg;
+        if (action.payload === 'ABORTED') {
+          return;
+        }
+        const { postId } = action.meta.arg;
         state.commentsStatus[postId] = 'failed';
       })
       .addCase(createCommentAsync.fulfilled, (state, action) => {
