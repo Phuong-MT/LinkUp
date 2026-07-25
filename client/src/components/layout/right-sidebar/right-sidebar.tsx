@@ -38,7 +38,7 @@ export default function RightSidebar() {
   ];
 
   return (
-    <aside className="h-full w-72 p-3 overflow-y-auto no-scrollbar hidden lg:block border-l border-zinc-250/20 shrink-0">
+    <aside className="h-full w-full max-w-[360px] p-3 overflow-y-auto no-scrollbar hidden lg:block border-l border-zinc-250/20 shrink-0">
       <div className="flex flex-col gap-4">
         {/* Sponsored Section */}
         <div>

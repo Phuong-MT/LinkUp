@@ -17,3 +17,24 @@ export const getUserMeAsync = createAsyncThunk(
     }
   },
 );
+
+interface SearchUserResponse {
+  id: string;
+  username: string;
+  fullName: string;
+  avatar: string;
+}
+
+export const searchFriendsAsync = createAsyncThunk(
+  'user/searchFriendsAsync',
+  async (query: string, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.get<SearchUserResponse[]>(`/user/search?q=${query}`);
+      return response.data;
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = e.response?.data?.message || e.message || 'Failed to search friends';
+      return rejectWithValue(errorMessage);
+    }
+  },
+);

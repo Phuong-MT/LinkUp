@@ -8,6 +8,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { MailModule } from './mail/mail.module';
+import { PostsModule } from './posts/posts.module';
+import { CloudModule } from './cloud/cloud.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { MailModule } from './mail/mail.module';
     AuthModule,
     UserModule,
     MailModule,
+    PostsModule,
+    CloudModule,
   ],
   controllers: [AppController],
   providers: [

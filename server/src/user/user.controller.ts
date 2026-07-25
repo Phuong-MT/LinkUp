@@ -4,6 +4,9 @@ import {
   Inject,
   Logger,
   NotFoundException,
+  Param,
+  Post,
+  Query,
   Req,
   UseGuards,
   forwardRef,
@@ -45,5 +48,45 @@ export class UserController {
       },
       role: req.user?.role,
     };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('search')
+  async searchUsers(
+    @Req() req: Partial<Request & { user?: { userId: string; role: UserRole } }>,
+    @Query('q') query?: string,
+  ) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new NotFoundException('User ID not found in token');
+    }
+    const q = query || '';
+    if (!q.trim()) {
+      return [];
+    }
+    const users = await this.userService.searchFriends(userId, q);
+    return users.map((u) => {
+      const userObj = (u.toObject ? u.toObject() : u) as UserDocument;
+      return {
+        id: userObj._id,
+        username: userObj.username,
+        fullName: userObj.profile?.fullName || userObj.username,
+        avatar: userObj.profile?.avatar || 'https://i.pravatar.cc/150',
+      };
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('friend/:friendId')
+  async addFriend(
+    @Req() req: Partial<Request & { user?: { userId: string; role: UserRole } }>,
+    @Param('friendId') friendId: string,
+  ) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new NotFoundException('User ID not found in token');
+    }
+    await this.userService.addFriend(userId, friendId);
+    return { success: true };
   }
 }

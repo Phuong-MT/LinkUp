@@ -3,6 +3,7 @@ import { combineReducers } from '@reduxjs/toolkit';
 import { type UnknownAction } from '@reduxjs/toolkit';
 
 import authReducer from './features/authSlice';
+import postReducer from './features/postSlice';
 import userReducer from './features/userSlice';
 
 function isHydrateAction(action: UnknownAction): action is UnknownAction & {
@@ -15,6 +16,7 @@ function isHydrateAction(action: UnknownAction): action is UnknownAction & {
 const combinedReducer = combineReducers({
   auth: authReducer,
   user: userReducer,
+  post: postReducer,
 });
 
 export const rootReducer = (state: RootState | undefined, action: UnknownAction): RootState => {
