@@ -135,8 +135,8 @@ export const MentionTextarea: React.FC<MentionTextareaProps> = ({
     const textBeforeMention = val.substring(0, mentionTriggerIndex);
     const textAfterCursor = val.substring(selectionStart);
 
-    // Insert @username followed by a space
-    const insertedText = `@${suggestion.username} `;
+    // Insert @id followed by a space
+    const insertedText = `@${suggestion.id} `;
     const newValue = textBeforeMention + insertedText + textAfterCursor;
 
     onChangeValue(newValue);

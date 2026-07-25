@@ -48,6 +48,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onShare }) => 
             text={post.content}
             className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap cursor-pointer"
             onClick={() => setShowDetailModal(true)}
+            mentions={post.mentions}
           />
         )}
 
@@ -83,6 +84,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onLike, onShare }) => 
                   text={post.originalPost.content}
                   className="text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap"
                   onClick={() => setShowDetailModal(true)}
+                  mentions={post.originalPost.mentions}
                 />
               )}
             </div>

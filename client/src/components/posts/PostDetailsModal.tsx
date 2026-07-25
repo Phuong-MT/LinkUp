@@ -170,6 +170,7 @@ export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({
               <ExpandableText
                 text={post.content}
                 className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap"
+                mentions={post.mentions}
               />
             )}
 
@@ -195,6 +196,7 @@ export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({
                   <ExpandableText
                     text={post.originalPost.content}
                     className="text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap"
+                    mentions={post.originalPost.mentions}
                   />
                 )}
               </div>
@@ -260,6 +262,7 @@ export const PostDetailsModal: React.FC<PostDetailsModalProps> = ({
                           text={comment.content}
                           className="mt-1 text-xs text-zinc-750 dark:text-zinc-300 leading-normal whitespace-pre-wrap"
                           maxLines={3}
+                          mentions={comment.mentions}
                         />
                       </div>
                     </div>

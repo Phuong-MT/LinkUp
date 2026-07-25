@@ -9,6 +9,7 @@ import {
   createCommentAsync,
   toggleLikePostAsync,
   sharePostAsync,
+  mapRawMention,
 } from './postThunks';
 
 interface PostState {
@@ -103,6 +104,7 @@ const postSlice = createSlice({
           commentsCount: 0,
           shares: 0,
           hasLiked: false,
+          mentions: rawPost.mentions ? rawPost.mentions.map(mapRawMention) : [],
         };
         state.posts.unshift(newPost);
         state.skip += 1;

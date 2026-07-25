@@ -70,6 +70,27 @@ export class UserService {
     return friends.map((f) => f._id);
   }
 
+  async findFriendIdsByIds(userId: string, ids: string[]): Promise<Types.ObjectId[]> {
+    if (!ids.length) return [];
+    const user = await this.userModel.findById(userId).select('friends').exec();
+    if (!user || !user.friends || user.friends.length === 0) {
+      return [];
+    }
+    const objectIds = ids.map((id) => new Types.ObjectId(id));
+    const friendObjectIds = objectIds.filter((oid) =>
+      user.friends.some((friendId) => friendId.equals(oid)),
+    );
+    if (friendObjectIds.length === 0) return [];
+    const friends = await this.userModel
+      .find({
+        _id: { $in: friendObjectIds },
+        status: UserStatus.ACTIVE,
+      })
+      .select('_id')
+      .exec();
+    return friends.map((f) => f._id);
+  }
+
   async findUserIdsByUsernames(usernames: string[]): Promise<Types.ObjectId[]> {
     if (!usernames.length) return [];
     const users = await this.userModel

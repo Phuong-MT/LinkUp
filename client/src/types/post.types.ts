@@ -7,6 +7,13 @@ export interface PostMedia {
   thumbnail?: string;
 }
 
+export interface MentionUser {
+  id: string;
+  username: string;
+  fullName: string;
+  avatar: string;
+}
+
 export interface Post {
   id: string;
   author: {
@@ -23,6 +30,7 @@ export interface Post {
   hasLiked?: boolean;
   isShared?: boolean;
   originalPost?: Post | null;
+  mentions?: MentionUser[];
 }
 
 export interface Comment {
@@ -33,4 +41,5 @@ export interface Comment {
   };
   content: string;
   createdAt: string;
+  mentions?: MentionUser[];
 }

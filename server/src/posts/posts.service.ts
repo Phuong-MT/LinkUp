@@ -47,15 +47,15 @@ export class PostsService {
 
   async extractMentions(authorId: string, content?: string): Promise<Types.ObjectId[]> {
     if (!content) return [];
-    // Extract unique usernames from @username patterns (word characters)
-    const regex = /@([a-zA-Z0-9_]+)/g;
-    const usernames = new Set<string>();
+    // Extract unique 24-character hex user IDs from @id patterns
+    const regex = /@([a-fA-F0-9]{24})/g;
+    const userIds = new Set<string>();
     let match: RegExpExecArray | null;
     while ((match = regex.exec(content)) !== null) {
-      usernames.add(match[1]);
+      userIds.add(match[1]);
     }
-    if (usernames.size === 0) return [];
-    return this.userService.findFriendIdsByUsernames(authorId, Array.from(usernames));
+    if (userIds.size === 0) return [];
+    return this.userService.findFriendIdsByIds(authorId, Array.from(userIds));
   }
 
   async uploadMedia(
@@ -142,9 +142,13 @@ export class PostsService {
     const posts = await this.postModel
       .find({ status: 'active' })
       .populate('authorId', 'username profile')
+      .populate('mentions', 'username profile')
       .populate({
         path: 'originalPostId',
-        populate: { path: 'authorId', select: 'username profile' },
+        populate: [
+          { path: 'authorId', select: 'username profile' },
+          { path: 'mentions', select: 'username profile' },
+        ],
       })
       .sort({ publishedAt: -1 })
       .skip(skip)
@@ -310,6 +314,7 @@ export class PostsService {
         const updatedBucket = await this.postCommentModel
           .findOne(query)
           .populate('comments.authorId', 'username profile')
+          .populate('comments.mentions', 'username profile')
           .exec();
 
         const created = updatedBucket?.comments.find(
@@ -340,6 +345,7 @@ export class PostsService {
     const buckets = await this.postCommentModel
       .find(filter)
       .populate('comments.authorId', 'username profile')
+      .populate('comments.mentions', 'username profile')
       .sort({ bucket: 1 })
       .exec();
 
@@ -418,9 +424,13 @@ export class PostsService {
       const populated = await this.postModel
         .findById(sharedPost._id)
         .populate('authorId', 'username profile')
+        .populate('mentions', 'username profile')
         .populate({
           path: 'originalPostId',
-          populate: { path: 'authorId', select: 'username profile' },
+          populate: [
+            { path: 'authorId', select: 'username profile' },
+            { path: 'mentions', select: 'username profile' },
+          ],
         })
         .exec();
 

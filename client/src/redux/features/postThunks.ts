@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 
-import { type Post, type PostMedia, type Comment } from '@/types/post.types';
+import { type Post, type PostMedia, type Comment, type MentionUser } from '@/types/post.types';
 import apiClient from '@/utils/api/axios';
 
 interface RawPostMedia {
@@ -10,6 +10,15 @@ interface RawPostMedia {
   height?: number;
   duration?: number;
   thumbnail?: string;
+}
+
+interface RawMentionResponse {
+  _id: string;
+  username?: string;
+  profile?: {
+    fullName?: string;
+    avatar?: string;
+  };
 }
 
 interface RawPostResponse {
@@ -31,6 +40,7 @@ interface RawPostResponse {
   hasLiked?: boolean;
   isShared?: boolean;
   originalPostId?: RawPostResponse | null;
+  mentions?: RawMentionResponse[];
 }
 
 interface RawCommentResponse {
@@ -44,7 +54,15 @@ interface RawCommentResponse {
   };
   content?: string;
   createdAt?: string;
+  mentions?: RawMentionResponse[];
 }
+
+export const mapRawMention = (m: RawMentionResponse): MentionUser => ({
+  id: m._id,
+  username: m.username || '',
+  fullName: m.profile?.fullName || '',
+  avatar: m.profile?.avatar || '',
+});
 
 export const mapRawPost = (p: RawPostResponse): Post => ({
   id: p._id,
@@ -61,6 +79,7 @@ export const mapRawPost = (p: RawPostResponse): Post => ({
   hasLiked: p.hasLiked || false,
   isShared: p.isShared || false,
   originalPost: p.originalPostId ? mapRawPost(p.originalPostId) : null,
+  mentions: p.mentions ? p.mentions.map(mapRawMention) : [],
 });
 
 export const fetchPostsAsync = createAsyncThunk(
@@ -125,6 +144,7 @@ export const fetchCommentsAsync = createAsyncThunk(
         },
         content: c.content || '',
         createdAt: new Date(c.createdAt || '').toLocaleString('vi-VN'),
+        mentions: c.mentions ? c.mentions.map(mapRawMention) : [],
       }));
       return { postId, comments };
     } catch (err: unknown) {
@@ -150,6 +170,7 @@ export const createCommentAsync = createAsyncThunk(
         },
         content: response.data.content || '',
         createdAt: new Date(response.data.createdAt || '').toLocaleString('vi-VN'),
+        mentions: response.data.mentions ? response.data.mentions.map(mapRawMention) : [],
       };
       return { postId: arg.postId, comment };
     } catch (err: unknown) {

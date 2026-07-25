@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 
+import { type MentionUser } from '@/types/post.types';
+
 interface ExpandableTextProps {
   text: string;
   className?: string;
   maxLines?: number;
   onClick?: () => void;
+  mentions?: MentionUser[];
 }
 
 export const ExpandableText: React.FC<ExpandableTextProps> = ({
@@ -12,6 +15,7 @@ export const ExpandableText: React.FC<ExpandableTextProps> = ({
   className = '',
   maxLines = 5,
   onClick,
+  mentions,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -26,20 +30,26 @@ export const ExpandableText: React.FC<ExpandableTextProps> = ({
 
   const renderTextWithMentions = (txt: string) => {
     if (!txt) return '';
-    const parts = txt.split(/(@[a-zA-Z0-9_]+)/g);
+    // Parse @ followed by 24 hex characters representing ObjectId
+    const parts = txt.split(/(@[a-fA-F0-9]{24})/g);
     return parts.map((part, i) => {
       if (part.startsWith('@')) {
-        return (
-          <span
-            key={i}
-            className="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            {part}
-          </span>
-        );
+        const userId = part.substring(1);
+        const user = mentions?.find((m) => m.id === userId);
+        if (user) {
+          const displayName = user.fullName || user.username;
+          return (
+            <span
+              key={i}
+              className="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              @{displayName}
+            </span>
+          );
+        }
       }
       return part;
     });
